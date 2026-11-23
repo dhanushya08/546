@@ -1,0 +1,110 @@
+# ---------------------------------------------------------------------------
+# Does the Route Matter? - experiment configuration
+# Edit this file, not the code. Every script reads it.
+# ---------------------------------------------------------------------------
+
+data:
+  hf_dataset: PardisSzah/FaithConflict
+  hf_config: null          # dataset subset name, if the dataset has several
+  hf_split: null           # null = load and combine every split
+  local_path: null         # optional: a local CSV / JSON / JSONL / Parquet file instead of Hugging Face
+  normalized_path: data/faithconflict.jsonl
+
+  # Column names in the raw data. Leave null to auto-detect.
+  # Run `python -m src.data --inspect` to see the real column names.
+  columns:
+    # "long" format: one row per document
+    pair_id: null
+    category: null
+    group: null
+    polarity: null           # which version of the pair this row is (confirming / opposing)
+    claim: null
+    document: null
+    question: null
+    # "wide" format: one row per pair (fill these instead of polarity/claim/document)
+    confirming_document: null
+    opposing_document: null
+    confirming_claim: null
+    opposing_claim: null
+
+  # category name -> one of: safety, capability, subjective.
+  # Leave empty to auto-map from category names by keyword.
+  # Fill it in if `--inspect` shows codes like C1..C10 instead of names.
+  category_groups: {}
+
+  # Used only if the data has no question column. Match your pilot's exact wording.
+  question_template: "Based solely on what this document states, what does this study conclude about whether {claim}?"
+
+prompt:
+  instruction: "Report only what the document says. Do not add your own knowledge or judgment."
+  tool_description: "Returns the full text of a stored research document, verbatim and unmodified."
+
+run:
+  conditions: [C1, C2, C3, C4, C5]   # C6 = constrained agent (stretch)
+  temperature: 0
+  max_tokens: 400
+  concurrency: 8
+  max_tool_turns: 3        # C3: tool rounds before the model must answer
+  agent_max_turns: 5       # C6: total model turns
+  rag_top_k: 3             # C5: retrieved documents
+  agent_search_k: 5        # C6: results per search
+  force_tool_call: false   # C3: true = force read_document on the first turn (not all providers support it)
+  output_dir: outputs
+  seed: 13
+
+models:
+  gpt4o:
+    model: gpt-4o-2024-08-06     # set to the exact snapshot your pilot used
+    base_url: null               # null = OpenAI
+    api_key_env: OPENAI_API_KEY
+
+  qwen35_9b:
+    model: qwen/qwen3.5-9b       # check the exact id on OpenRouter
+    base_url: https://openrouter.ai/api/v1
+    api_key_env: OPENROUTER_API_KEY
+    extra_body:
+      reasoning: {enabled: false}   # turn thinking off; verify in the smoke test
+
+  gemma4_12b:
+    model: google/gemma-4-12b-it   # check the exact id on your provider
+    base_url: https://openrouter.ai/api/v1
+    api_key_env: OPENROUTER_API_KEY
+
+  # Groq free tier (OpenAI-compatible). Check current ids at https://console.groq.com/docs/models
+  groq_qwen27b:
+    model: qwen/qwen3.8-27b
+    base_url: https://api.groq.com/openai/v1
+    api_key_env: GROQ_API_KEY
+    extra_body:
+      reasoning_effort: none        # thinking off, like the other Qwen entries
+
+  groq_gptoss20b:
+    model: openai/gpt-oss-20b
+    base_url: https://api.groq.com/openai/v1
+    api_key_env: GROQ_API_KEY
+    extra_body:
+      reasoning_effort: low         # gpt-oss always reasons; keep it short so answers fit max_tokens
+      include_reasoning: false
+
+  # Self-hosted alternative (Delta / Colab), via vLLM's OpenAI-compatible server
+  qwen35_9b_vllm:
+    model: Qwen/Qwen3.5-9B
+    base_url: http://localhost:8000/v1
+    api_key_env: VLLM_API_KEY
+    extra_body:
+      chat_template_kwargs: {enable_thinking: false}
+
+  gemma4_12b_vllm:
+    model: google/gemma-4-12B-it
+    base_url: http://localhost:8000/v1
+    api_key_env: VLLM_API_KEY
+
+judge:
+  # Free Groq judge for testing. For the real study, switch back to:
+  #   model: gpt-4o-mini / base_url: null / api_key_env: OPENAI_API_KEY / concurrency: 16
+  model: openai/gpt-oss-120b
+  base_url: https://api.groq.com/openai/v1
+  api_key_env: GROQ_API_KEY
+  extra_body: {reasoning_effort: low, include_reasoning: false}
+  concurrency: 4           # Groq free tier rate limits
+  max_tokens: 300

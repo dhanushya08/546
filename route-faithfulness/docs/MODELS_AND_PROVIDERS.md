@@ -48,11 +48,13 @@ The `provider:` field on each model picks the client (`src/llm.py`): `openai` (d
 - C5: BM25 recall@3 92% (1,736 of 1,880).
 - Repeating one T1 request gave two different answers at temperature 0, so Gemini is not deterministic.
 
+Claude Sonnet 4.6, same run: 0 API errors; C3 tool called on 100% of documents; C5 recall@3 92%; 8 API-level refusals (`stop_reason: refusal`, empty text), all on capability math items (4 in C1, 4 in C5). Results for both models: [../runs/2026-11-23/README.md](../runs/2026-11-23/README.md).
+
 ## Costs
 
 | Model | Price, $ per 1M tokens (input / output) | Full run, 6 conditions × 1,880 documents |
 |---|---|---|
-| Claude Sonnet 4.6 (Claude API) | 3.00 / 15.00 | About $70 projected ($43.52 at 7,201 documents) |
+| Claude Sonnet 4.6 (Claude API) | 3.00 / 15.00 | $69.41 measured, incl. smoke test (10.18M input, 2.59M output tokens) |
 | Gemini 3.5 Flash (Vertex) | 1.50 / 9.00 | $18.99 measured (6.47M input, 1.03M output tokens) |
 | gpt-oss-120b judge (Vertex) | 0.09 / 0.36 | About $4 per model, estimated |
 | Notebook runtime on Colab Enterprise (e2-standard-2) | about $0.10 per hour | About $1 for a night |

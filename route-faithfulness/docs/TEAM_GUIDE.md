@@ -15,17 +15,29 @@ Last updated 2026-11-23.
 
 ## Status
 
-Both models finished the 30-pair smoke test, and the full 940-pair run is under way. Gemini 3.5 Flash has answered all 11,280 documents; Claude Sonnet 4.6 is past its halfway point.
+The full 940-pair run is done for Claude Sonnet 4.6 and Gemini 3.5 Flash: every document answered and judged, results in [`runs/2026-11-23/`](../runs/2026-11-23/README.md). The first reading is below; none of it holds until the judge is validated (task 2).
 
 | Piece | State | Detail |
 |---|---|---|
 | Claude API + Vertex AI support, T1 rung, notebook | In review | [PR #1](https://github.com/dhanushya08/546/pull/1) |
 | Smoke test, 30 pairs, Claude Sonnet 4.6 + Gemini 3.5 Flash | Done | 0 API errors; tools called 100% in C3 |
-| Full run, Gemini 3.5 Flash (C1, C2, T1, C3, C4, C5) | Answers done, judging | 11,280 documents, $18.99 |
-| Full run, Claude Sonnet 4.6 (same conditions) | Running | about $70 when done |
+| Full run, Gemini 3.5 Flash (C1, C2, T1, C3, C4, C5) | Done | 11,280 documents, $18.99 |
+| Full run, Claude Sonnet 4.6 (same conditions) | Done | 11,280 documents, $69.41 |
+| DeltaAI for Llama 3.1 | Scripts ready, untested | Waiting on DeltaAI accounts ([DELTAAI_SETUP.md](DELTAAI_SETUP.md)) |
 | Claude on Vertex AI | Blocked | Project quota is 0; needs a quota request |
 | Llama 3.1 8B / 70B | Blocked on Vertex | No longer served there; see [MODELS_AND_PROVIDERS.md](MODELS_AND_PROVIDERS.md) |
 | Judge validation (kappa) | Not started | Needed before trusting any number |
+
+**First reading of the full run** (faithful rate on opposing documents, %, strict judge):
+
+| Model | C1 Direct | C2 Reshaped | T1 Tool-injected | C3 Tool | C4 RAG-oracle | C5 RAG-BM25 |
+|---|---|---|---|---|---|---|
+| Claude Sonnet 4.6 | 33.3 | 17.8 | 27.8 | 27.9 | 15.9 | 27.8 |
+| Gemini 3.5 Flash | 42.7 | 21.9 | 34.0 | 33.7 | 26.0 | 39.4 |
+
+- The drop from direct to tool is 5 to 9 points, not the pilot's 41, and it comes from rewording the prompt (C1 → C2). The tool channel then recovers part of it (C2 → T1, +10 to +12 points), and agency (T1 → C3) changes nothing.
+- Silent inversions are rare (under 3%). Most failures are `O`: the answer relays "the evidence is robust" without restating the conclusion. With those counted as faithful (lenient), every condition is 82-86% (Claude) or 96-99% (Gemini) and the route effect mostly disappears. Whether `O` is a real failure on these vague template documents is the question the judge validation has to settle.
+- Safety documents start near the floor (Claude 8.5%, Gemini 17.1% at C1), so alignment specificity comes out negative.
 
 The run's outputs are committed in [`runs/2026-11-23/`](../runs/2026-11-23/README.md): gzipped transcripts, judge labels and the smoke-test results, with restore commands. `outputs/` and `results/` stay git-ignored as working folders; to share a new run, add a dated folder under `runs/` the same way.
 
@@ -37,7 +49,7 @@ Pick a task, put your name in the Owner column in a PR, and link your PR in Note
 |---|---|---|---|---|
 | 1 | Review and merge PR #1 | Everything below builds on it | | |
 | 2 | Validate the judge: ~150 hand labels, Cohen's kappa | The smoke test labeled many answers `O` (omission), even on confirming documents. If the judge is wrong there, every rate is wrong. | | `python -m src.validate_judge --export-sample 150 --models claude_sonnet46 gemini35_flash`, label blind, then `--human-csv` (README step 5) |
-| 3 | Decide how empty answers count | Gemini made a malformed tool call on 69 of 1,880 C3 documents, 42 of them safety. These are excluded from rates now, which can make C3 look more faithful on safety than it is. | | Options: exclude and report the rate (now), count as unfaithful, or count as refusal (B7). See STUDY_DESIGN.md "Open decisions" |
+| 3 | Decide how empty answers count | Gemini made a malformed tool call on 69 of 1,880 C3 documents, 42 of them safety; Claude returned 8 API-level refusals (empty text) on capability math items. These are excluded from rates now, which can make C3 look more faithful on safety than it is. | | Options: exclude and report the rate (now), count as unfaithful, or count as refusal (B7). See STUDY_DESIGN.md "Open decisions" |
 | 4 | Write up the plan | Paper sections 1-3 | | STUDY_DESIGN.md has the design in one place |
 | 5 | Add T3: the three tool descriptions | Plan rung T3 (source trust). Today every tool run uses the "verbatim and unmodified" description, i.e. T3-trusted. | | Add `neutral` and `unverified` descriptions as new conditions; see STUDY_DESIGN.md |
 | 6 | Add the quote probe | Separates override (read the claim, changed it) from reading failure | | A separate pass: ask for the conclusion sentence, then the answer |

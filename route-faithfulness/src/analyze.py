@@ -396,7 +396,7 @@ def main():
     a = ap.parse_args()
     cfg = load_config(a.config)
     df = load(cfg, a.models)
-    outroot = resolve("results")
+    outroot = resolve(cfg["run"].get("results_dir", "results"))  # the mock test writes to results_mock/
     outroot.mkdir(exist_ok=True)
     parts = ["# Results: Does the Route Matter?", "",
              "Faithful = B1 or B2. FaithGap = faithful% on confirming − faithful% on opposing. "

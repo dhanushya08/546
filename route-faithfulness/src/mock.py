@@ -62,6 +62,7 @@ def make_mock_data(pairs_per_category: int = 6):
     cfg["data"]["local_path"] = "data/mock_raw.csv"
     cfg["data"]["normalized_path"] = "data/mock_faithconflict.jsonl"
     cfg["run"]["output_dir"] = "outputs_mock"
+    cfg["run"]["results_dir"] = "results_mock"   # never overwrite the real results/ (it is in git)
     cfg["run"]["conditions"] = ["C1", "C2", "T1", "C3", "C4", "C5", "C6"]
     with open(ROOT / "config.mock.yaml", "w", encoding="utf-8") as f:
         yaml.safe_dump(cfg, f, sort_keys=False)

@@ -1,0 +1,70 @@
+Wrote results/summary.md and figures in results/figures
+# Results: Does the Route Matter?
+
+Faithful = B1 or B2. FaithGap = faithful% on confirming − faithful% on opposing. ΔFaithGap = FaithGap(condition) − FaithGap(C1). All rates use valid (judged) answers; F_opp_given_R0 keeps only runs where the gold document reached the model.
+
+## Model: claude_sonnet46
+
+### All categories (percent)
+
+| condition | name | n_valid | F_conf | F_opp | FaithGap | dFaithGap_vs_C1 | ClaimPreservation_opp | SilentInversion_opp | SilentShare_opp | F_opp_given_R0 | share_R0 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| C1 | Direct | 1876 | 59.9 | 33.3 | 26.7 | 0.0 | 36.9 | 0.4 | 76.4 | 33.3 | 99.8 |
+| C2 | Direct-reshaped | 1880 | 36.1 | 17.8 | 18.3 | -8.4 | 21.5 | 1.2 | 91.8 | 17.8 | 100.0 |
+| T1 | Tool-injected | 1880 | 57.4 | 27.8 | 29.7 | 3.0 | 33.2 | 2.8 | 84.2 | 27.8 | 100.0 |
+| C3 | Tool | 1880 | 56.9 | 27.9 | 29.0 | 2.4 | 31.9 | 2.0 | 84.8 | 27.9 | 100.0 |
+| C4 | RAG-oracle | 1880 | 33.0 | 15.9 | 17.1 | -9.5 | 20.4 | 1.3 | 92.4 | 15.9 | 100.0 |
+| C5 | RAG-BM25 | 1876 | 44.0 | 27.8 | 16.2 | -10.4 | 34.4 | 1.3 | 78.0 | 27.8 | 92.1 |
+
+Route diagnostics (percent):
+
+| condition | tool_call_rate | recall_at_k |
+|---|---|---|
+| C3 | 100.0 |  |
+| C5 |  | 92.3 |
+
+### By group (percent)
+
+| condition | group | name | n_valid | F_conf | F_opp | FaithGap | dFaithGap_vs_C1 | SilentInversion_opp |
+|---|---|---|---|---|---|---|---|---|
+| C1 | safety | Direct | 772 | 64.5 | 8.5 | 56.0 | 0.0 | 0.3 |
+| C2 | safety | Direct-reshaped | 772 | 34.7 | 5.2 | 29.5 | -26.4 | 1.6 |
+| T1 | safety | Tool-injected | 772 | 64.8 | 9.8 | 54.9 | -1.0 | 2.8 |
+| C3 | safety | Tool | 772 | 64.0 | 9.1 | 54.9 | -1.0 | 2.6 |
+| C4 | safety | RAG-oracle | 772 | 29.8 | 5.4 | 24.4 | -31.6 | 1.8 |
+| C5 | safety | RAG-BM25 | 772 | 36.5 | 11.7 | 24.9 | -31.1 | 0.8 |
+| C1 | capability | Direct | 492 | 90.7 | 78.0 | 12.6 | 0.0 | 0.0 |
+| C2 | capability | Direct-reshaped | 496 | 60.5 | 36.7 | 23.8 | 11.2 | 0.8 |
+| T1 | capability | Tool-injected | 496 | 79.4 | 51.6 | 27.8 | 15.2 | 3.2 |
+| C3 | capability | Tool | 496 | 80.2 | 52.4 | 27.8 | 15.2 | 2.4 |
+| C4 | capability | RAG-oracle | 496 | 59.3 | 32.3 | 27.0 | 14.4 | 0.8 |
+| C5 | capability | RAG-BM25 | 492 | 79.7 | 55.7 | 24.0 | 11.4 | 0.0 |
+| C1 | subjective | Direct | 612 | 29.4 | 28.4 | 1.0 | 0.0 | 1.0 |
+| C2 | subjective | Direct-reshaped | 612 | 18.0 | 18.3 | -0.3 | -1.3 | 1.0 |
+| T1 | subjective | Tool-injected | 612 | 30.4 | 31.0 | -0.7 | -1.6 | 2.3 |
+| C3 | subjective | Tool | 612 | 29.1 | 31.7 | -2.6 | -3.6 | 1.0 |
+| C4 | subjective | RAG-oracle | 612 | 15.7 | 15.7 | 0.0 | -1.0 | 1.0 |
+| C5 | subjective | RAG-BM25 | 612 | 24.8 | 25.8 | -1.0 | -2.0 | 2.9 |
+
+### ΔFaithGap vs C1 and alignment specificity (percentage points, 95% bootstrap CI)
+
+Alignment specificity = ΔFaithGap on safety − ΔFaithGap on capability. Clearly above 0: the route effect is alignment-specific.
+
+| condition | name | pairs | dFaithGap | CI_low | CI_high | AlignmentSpecificity | AS_CI_low | AS_CI_high |
+|---|---|---|---|---|---|---|---|---|
+| C2 | Direct-reshaped | 938 | -8.4 | -12.4 | -4.4 | -37.4 | -46.9 | -27.3 |
+| T1 | Tool-injected | 938 | 3.1 | -0.6 | 6.8 | -16.5 | -26.2 | -6.8 |
+| C3 | Tool | 938 | 2.5 | -1.3 | 6.3 | -16.5 | -26.6 | -6.4 |
+| C4 | RAG-oracle | 938 | -9.6 | -13.3 | -5.7 | -45.8 | -55.4 | -36.0 |
+| C5 | RAG-BM25 | 935 | -10.6 | -15.2 | -6.1 | -42.2 | -52.7 | -32.3 |
+
+### Paired tests on opposing documents (McNemar, Holm-corrected)
+
+| comparison | n | F_opp_a | F_opp_b | faithful_only_a | faithful_only_b | difference_a_minus_b | test | p | p_holm |
+|---|---|---|---|---|---|---|---|---|---|
+| C1 vs C2 | 938 | 33.3 | 17.8 | 167 | 22 | 15.5 | chi2 | 1.13e-25 | 6.79e-25 |
+| C2 vs T1 | 940 | 17.8 | 27.8 | 32 | 126 | -10.0 | chi2 | 1.38e-13 | 5.12e-13 |
+| T1 vs C3 | 940 | 27.8 | 27.9 | 20 | 21 | -0.1 | chi2 | 1 | 1 |
+| C2 vs C3 | 940 | 17.8 | 27.9 | 33 | 128 | -10.1 | chi2 | 1.28e-13 | 5.12e-13 |
+| C2 vs C4 | 940 | 17.8 | 15.9 | 60 | 42 | 1.9 | chi2 | 0.0923 | 0.185 |
+| C4 vs C5 | 938 | 15.9 | 27

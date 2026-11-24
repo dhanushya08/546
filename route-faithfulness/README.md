@@ -112,7 +112,7 @@ Provider notes (all handled in `src/llm.py` and `src/llm_anthropic.py`, set per 
 bash scripts/mock_test.sh
 ```
 
-This runs every step on 60 fake pairs with a fake model and writes `results/summary.md` and three figures. If it ends with "Mock pipeline OK", the code works on your machine. The mock numbers mean nothing.
+This runs every step on 60 fake pairs with a fake model and writes `results_mock/summary.md` and three figures (the real `outputs/` and `results/` are untouched). If it ends with "Mock pipeline OK", the code works on your machine. The mock numbers mean nothing.
 
 ### Step 2: prepare FaithConflict (10 min)
 

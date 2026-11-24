@@ -39,7 +39,7 @@ The full 940-pair run is done for Claude Sonnet 4.6 and Gemini 3.5 Flash: every 
 - Silent inversions are rare (under 3%). Most failures are `O`: the answer relays "the evidence is robust" without restating the conclusion. With those counted as faithful (lenient), every condition is 82-86% (Claude) or 96-99% (Gemini) and the route effect mostly disappears. Whether `O` is a real failure on these vague template documents is the question the judge validation has to settle.
 - Safety documents start near the floor (Claude 8.5%, Gemini 17.1% at C1), so alignment specificity comes out negative.
 
-The run's outputs are committed in [`runs/2026-11-23/`](../runs/2026-11-23/README.md): gzipped transcripts, judge labels and the smoke-test results, with restore commands. `outputs/` and `results/` stay git-ignored as working folders; to share a new run, add a dated folder under `runs/` the same way.
+The run's outputs are in git twice: ready to use in `outputs/`, `results/`, `logs/` and `data/`, and as a compressed, frozen copy in [`runs/2026-11-23/`](../runs/2026-11-23/README.md). Clone the repo and `python -m src.analyze` or `python -m src.peek` work straight away. Commit new runs' outputs the same way; the mock test only writes to `outputs_mock/` and `results_mock/`, which stay out of git.
 
 ## Open tasks
 
@@ -75,10 +75,12 @@ Pick a task, put your name in the Owner column in a PR, and link your PR in Note
 | Every setting: models, prompts, conditions, judge | `config.yaml` |
 | Setup + smoke test + full run, locally or on Vertex AI | `notebooks/vertex_setup_and_run.ipynb` |
 | API keys | `.env`, git-ignored; template in `.env.example`. Never commit keys or paste them into the notebook |
-| Raw answers / judged answers (working copies) | `outputs/raw/<model>/<condition>.jsonl`, `outputs/judged/<model>/<condition>.jsonl` (not in git) |
-| Shared run snapshots | `runs/<date>/` (in git; raw transcripts gzipped) |
+| Raw answers / judged answers | `outputs/raw/<model>/<condition>.jsonl`, `outputs/judged/<model>/<condition>.jsonl` (in git) |
+| Run logs | `logs/<model>.log`, `logs/analyze.log` (in git) |
+| Prepared dataset | `data/faithconflict.jsonl` (in git; CC BY 4.0, see `data/README.md`) |
+| Frozen run snapshots | `runs/<date>/` (in git; gzipped) |
 | Launch several models in parallel | `scripts/run_parallel.sh <model> <model> ...` |
-| Tables and figures | `results/summary.md`, `results/figures/` (rebuilt by `python -m src.analyze`) |
+| Tables and figures | `results/summary.md`, `results/figures/` (in git; rebuilt by `python -m src.analyze`) |
 
 ## How to pick up a task
 

@@ -1,5 +1,7 @@
 # Does the Route Matter? Delivery route and alignment-induced unfaithfulness
 
+**Team docs:** start with [docs/TEAM_GUIDE.md](docs/TEAM_GUIDE.md) for status, open tasks and owners. [docs/STUDY_DESIGN.md](docs/STUDY_DESIGN.md) maps the plan to the code, and [docs/MODELS_AND_PROVIDERS.md](docs/MODELS_AND_PROVIDERS.md) covers models, costs and caveats.
+
 **Research question.** Does the way a document reaches an LLM (in the prompt, through a tool, through retrieval, or through an agent) change whether the model faithfully reports it, especially when the document's claim conflicts with what the model was aligned to believe?
 
 **Data.** FaithConflict (Zahraei et al., COLM 2026): 940 pairs, 1,880 documents. Each pair has a confirming and an opposing version of one document, identical except for the claim. Groups: safety (386 pairs), capability (248), subjective (306).

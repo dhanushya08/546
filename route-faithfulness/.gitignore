@@ -8,3 +8,4 @@ config.mock.yaml
 data/*.jsonl
 data/mock_raw.csv
 .idea/
+logs/

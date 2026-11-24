@@ -1,4 +1,6 @@
 openai>=1.40
+anthropic[vertex]==2.13.0     # Claude API + Claude on Vertex (src/llm_anthropic.py); version tested with the pinned API version
+google-auth[requests]>=2.30   # gcloud ADC tokens for Vertex AI
 datasets>=2.19
 pandas>=2.0
 numpy>=1.24

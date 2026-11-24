@@ -1,8 +1,9 @@
 """One function per condition. Each returns the logged record for one document.
 
-C1 Direct            document in the prompt (paper layout)
-C2 Direct-reshaped   same user text as C3, document inline         (wording control)
-C3 Tool              model calls read_document, verbatim return    (tool channel)
+C1 Direct            document in the prompt (paper layout)                         plan: D0
+C2 Direct-reshaped   same user text as C3, document inline         (wording control)  plan: D1
+T1 Tool-injected     harness writes the read_document call itself  (channel only)     plan: T1
+C3 Tool              model calls read_document, verbatim return    (agency)           plan: T2
 C4 RAG-oracle        gold document presented as a retrieved result (presentation, no retrieval error)
 C5 RAG-BM25          real top-k BM25 retrieval, twin excluded      (retrieval errors)
 C6 Agent (stretch)   search_corpus + read_document, step budget    (autonomy)
@@ -13,11 +14,17 @@ import json
 
 from . import prompts as P
 
-ALL_CONDITIONS = ["C1", "C2", "C3", "C4", "C5", "C6"]
+# Ladder order: tables and figures follow it.
+ALL_CONDITIONS = ["C1", "C2", "T1", "C3", "C4", "C5", "C6"]
 CONDITION_NAMES = {
-    "C1": "Direct", "C2": "Direct-reshaped", "C3": "Tool", "C4": "RAG-oracle",
+    "C1": "Direct", "C2": "Direct-reshaped", "T1": "Tool-injected", "C3": "Tool", "C4": "RAG-oracle",
     "C5": "RAG-BM25", "C6": "Agent",
 }
+
+
+def order_conditions(conds) -> list[str]:
+    conds = set(conds)
+    return [c for c in ALL_CONDITIONS if c in conds] + sorted(conds - set(ALL_CONDITIONS))
 
 
 class Context:
@@ -27,6 +34,7 @@ class Context:
         self.instr = cfg["prompt"]["instruction"]
         self.read_tool = P.read_tool(cfg["prompt"]["tool_description"])
         self.llm = llm
+        self.injected_call_extra = (getattr(llm, "cfg", None) or {}).get("injected_tool_call_extra")
         self.by_id = {r["doc_id"]: r for r in rows}
         self.retriever = retriever
 
@@ -48,7 +56,7 @@ def _base(rec: dict, cond: str) -> dict:
 
 async def run_condition(cond: str, rec: dict, ctx: Context) -> dict:
     out = _base(rec, cond)
-    fn = {"C1": _c1, "C2": _c2, "C3": _c3, "C4": _c4, "C5": _c5, "C6": _c6}[cond]
+    fn = {"C1": _c1, "C2": _c2, "T1": _t1, "C3": _c3, "C4": _c4, "C5": _c5, "C6": _c6}[cond]
     try:
         out |= await fn(rec, ctx)
         out["error"] = None
@@ -92,7 +100,7 @@ async def _c5(rec, ctx):
 async def _tool_loop(messages, tools, ctx, rec, max_turns, first_choice=None):
     """Generic tool loop. Returns transcript, calls, final answer and bookkeeping."""
     calls_log, usage, reasoning = [], [], False
-    answer, budget_hit = None, False
+    answer, budget_hit, finish = None, False, None
     for turn in range(max_turns + 1):
         last = turn == max_turns
         if last:
@@ -102,6 +110,7 @@ async def _tool_loop(messages, tools, ctx, rec, max_turns, first_choice=None):
         r = await ctx.ask(messages, tools=tools, tool_choice=choice)
         usage.append(r["usage"])
         reasoning |= r["reasoning_present"]
+        finish = r["finish_reason"]
         if r["tool_calls"] and not last:
             messages = messages + [r["assistant_message"]]
             for tc in r["tool_calls"]:
@@ -124,7 +133,8 @@ async def _tool_loop(messages, tools, ctx, rec, max_turns, first_choice=None):
             budget_hit = True
         break
     return {"answer": answer, "messages": messages, "tool_calls": calls_log, "usage": usage,
-            "reasoning_present": reasoning, "budget_hit": budget_hit or (answer in (None, ""))}
+            "reasoning_present": reasoning, "finish_reason": finish,
+            "budget_hit": budget_hit or (answer in (None, ""))}
 
 
 async def _c3(rec, ctx):
@@ -133,6 +143,20 @@ async def _c3(rec, ctx):
     res = await _tool_loop(msgs, [ctx.read_tool], ctx, rec, ctx.run["max_tool_turns"], first_choice=force)
     reads = [c for c in res["tool_calls"] if c["name"] == "read_document"]
     res["gold_in_context"] = any(c["returned"] == rec["doc_id"] for c in reads)
+    return res
+
+
+async def _t1(rec, ctx):
+    """T1: C3's user turn, then a read_document call the harness made, then the model answers.
+    From here on it is C3's loop with the same budget: C3 spends its first tool round on the gold
+    read, so T1 gets max_tool_turns - 1 further rounds before it must answer."""
+    msgs = P.c3_tool_user(rec["doc_id"], rec["question"], ctx.instr) \
+        + P.t1_injected_read(rec["doc_id"], rec["document"], ctx.injected_call_extra)
+    res = await _tool_loop(msgs, [ctx.read_tool], ctx, rec, max(1, ctx.run["max_tool_turns"] - 1))
+    res["tool_calls"] = [{"name": "read_document", "arguments": {"doc_id": rec["doc_id"]},
+                          "returned": rec["doc_id"], "injected": True}] + res["tool_calls"]
+    res["gold_in_context"] = True
+    res["model_tool_calls"] = len(res["tool_calls"]) - 1  # extra calls the model chose to make
     return res
 
 

@@ -40,7 +40,8 @@ prompt:
   tool_description: "Returns the full text of a stored research document, verbatim and unmodified."
 
 run:
-  conditions: [C1, C2, C3, C4, C5]   # C6 = constrained agent (stretch)
+  # Ladder: C1 Direct (D0) -> C2 Reshaped (D1) -> T1 Tool-injected (channel) -> C3 Tool (agency, T2)
+  conditions: [C1, C2, T1, C3, C4, C5]   # C6 = constrained agent (stretch)
   temperature: 0
   max_tokens: 400
   concurrency: 8
@@ -53,6 +54,50 @@ run:
   seed: 13
 
 models:
+  # `provider` picks the client (src/llm.py): openai (default, any OpenAI-compatible API),
+  # vertex_openai (Vertex AI, gcloud ADC auth), anthropic (Claude API), anthropic_vertex (Claude on Vertex).
+
+  # --- Claude API (Anthropic SDK). Key: ANTHROPIC_API_KEY in .env.
+  claude_sonnet46:
+    provider: anthropic
+    model: claude-sonnet-4-6
+    api_key_env: ANTHROPIC_API_KEY
+    # Kept on API version 2023-06-01 so temperature 0 is accepted (2026-10-21 rejects temperature).
+    anthropic_version: "2023-06-01"
+
+  # --- Claude on Vertex AI (same model, Google billing). Needs Sonnet 4.6 enabled in Model Garden
+  # and a non-zero quota (global_online_prediction_requests_per_base_model); 0 by default on new projects.
+  claude_sonnet46_vertex:
+    provider: anthropic_vertex
+    model: claude-sonnet-4-6
+    region: global
+    project_env: GOOGLE_CLOUD_PROJECT
+    anthropic_version: vertex-2023-10-16
+
+  # --- Gemini on Vertex AI, OpenAI-compatible endpoint. Auth: gcloud ADC
+  # (`gcloud auth application-default login` locally; automatic in Colab Enterprise).
+  gemini35_flash:
+    provider: vertex_openai
+    model: google/gemini-3.5-flash
+    location: global
+    project_env: GOOGLE_CLOUD_PROJECT
+    extra_body:
+      extra_body: {google: {thinking_config: {thinking_budget: 0}}}   # thinking off (verified: 0 reasoning tokens)
+    # Gemini 3 rejects a function call in history without a thought signature. The T1 call is written by
+    # the harness, so it carries Google's documented placeholder signature.
+    injected_tool_call_extra:
+      extra_content: {google: {thought_signature: skip_thought_signature_validator}}
+
+  # Same Gemini model through the Gemini Developer API with an API key (no gcloud needed).
+  gemini35_flash_apikey:
+    model: gemini-3.5-flash
+    base_url: https://generativelanguage.googleapis.com/v1beta/openai/
+    api_key_env: GEMINI_API_KEY
+    extra_body:
+      extra_body: {google: {thinking_config: {thinking_budget: 0}}}
+    injected_tool_call_extra:
+      extra_content: {google: {thought_signature: skip_thought_signature_validator}}
+
   gpt4o:
     model: gpt-4o-2024-08-06     # set to the exact snapshot your pilot used
     base_url: null               # null = OpenAI
@@ -99,12 +144,30 @@ models:
     base_url: http://localhost:8000/v1
     api_key_env: VLLM_API_KEY
 
+  # Plan's open-weights scaling pair, served with vLLM on DeltaAI (docs/DELTAAI_SETUP.md).
+  # Not served on Vertex AI any more. Llama 3.1 has no thinking mode; tool calls use vLLM's llama3_json parser.
+  llama31_8b_vllm:
+    model: meta-llama/Llama-3.1-8B-Instruct
+    base_url: http://localhost:8000/v1
+    api_key_env: VLLM_API_KEY
+
+  llama31_70b_vllm:
+    model: meta-llama/Llama-3.1-70B-Instruct
+    base_url: http://localhost:8000/v1
+    api_key_env: VLLM_API_KEY
+
 judge:
-  # Free Groq judge for testing. For the real study, switch back to:
-  #   model: gpt-4o-mini / base_url: null / api_key_env: OPENAI_API_KEY / concurrency: 16
-  model: openai/gpt-oss-120b
-  base_url: https://api.groq.com/openai/v1
-  api_key_env: GROQ_API_KEY
-  extra_body: {reasoning_effort: low, include_reasoning: false}
-  concurrency: 4           # Groq free tier rate limits
-  max_tokens: 300
+  # gpt-oss-120b on Vertex AI (same judge model as the earlier Groq setup; neither tested model).
+  # Auth: gcloud ADC, like gemini35_flash.
+  provider: vertex_openai
+  model: openai/gpt-oss-120b-maas
+  location: global
+  project_env: GOOGLE_CLOUD_PROJECT
+  extra_body: {reasoning_effort: low}
+  concurrency: 16
+  max_tokens: 1000         # gpt-oss reasons first; its reasoning counts toward max_tokens
+  # Groq alternative (free tier):
+  #   provider: openai / model: openai/gpt-oss-120b / base_url: https://api.groq.com/openai/v1
+  #   api_key_env: GROQ_API_KEY / extra_body: {reasoning_effort: low, include_reasoning: false}
+  #   concurrency: 4 / max_tokens: 300
+  # For the real study the README suggests gpt-4o-mini (base_url: null, api_key_env: OPENAI_API_KEY).

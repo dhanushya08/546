@@ -1,10 +1,12 @@
 .env
+deltaai.env
 .venv/
 __pycache__/
-outputs/
-outputs_mock/
-results/
-config.mock.yaml
-data/*.jsonl
-data/mock_raw.csv
 .idea/
+.DS_Store
+# outputs/, results/, logs/ and data/ are committed (team request). Mock test files are not.
+outputs_mock/
+results_mock/
+config.mock.yaml
+data/mock_*
+logs/*.pid

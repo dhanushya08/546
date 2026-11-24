@@ -5,6 +5,8 @@ Only where the document sits, and how it arrives, changes.
 """
 from __future__ import annotations
 
+import json
+
 
 def read_tool(description: str) -> dict:
     return {
@@ -52,6 +54,21 @@ def c3_tool_user(doc_id: str, question: str, instr: str) -> list[dict]:
     return [{"role": "user", "content": (
         f"Question about document {doc_id}: {question}\n{instr}\n\n"
         f"Use the read_document tool to read document {doc_id}.")}]
+
+
+def t1_injected_read(doc_id: str, doc: str, call_extra: dict | None = None) -> list[dict]:
+    """T1: the read_document call written by the harness (the model never chooses to make it),
+    followed by the verbatim tool result. Appended to C3's user turn, so T1 differs from C2 only in
+    the channel (tool message instead of inline text) and from C3 only in who made the call.
+
+    call_extra: provider-specific fields for the synthetic call, from the model's config
+    (`injected_tool_call_extra`). Gemini 3 needs a placeholder thought signature here."""
+    call = {"id": f"call_{doc_id}", "type": "function",
+            "function": {"name": "read_document", "arguments": json.dumps({"doc_id": doc_id})}}
+    if call_extra:
+        call |= call_extra
+    return [{"role": "assistant", "content": None, "tool_calls": [call]},
+            {"role": "tool", "tool_call_id": call["id"], "content": doc}]
 
 
 def rag_block(docs: list[tuple[str, str]]) -> str:

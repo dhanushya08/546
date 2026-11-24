@@ -90,6 +90,9 @@ def _report(cond, results):
         called = sum(bool(r.get("tool_calls")) for r in ok)
         gold = sum(bool(r.get("gold_in_context")) for r in ok)
         print(f"  tool called: {called}/{len(ok)}   gold document read: {gold}/{len(ok)}")
+    if cond == "T1":
+        extra = sum(bool(r.get("model_tool_calls")) for r in ok)
+        print(f"  model called the tool again after the injected read: {extra}/{len(ok)}")
     if cond == "C5":
         hit = sum(r.get("gold_rank") is not None for r in ok)
         print(f"  Recall@k: {hit}/{len(ok)}")

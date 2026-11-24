@@ -1,0 +1,35 @@
+                               GEE Regression Results                              
+===================================================================================
+Dep. Variable:                           y   No. Observations:                  180
+Model:                                 GEE   No. clusters:                       30
+Method:                        Generalized   Min. cluster size:                   6
+                      Estimating Equations   Max. cluster size:                   6
+Family:                           Binomial   Mean cluster size:                 6.0
+Dependence structure:         Exchangeable   Num. iterations:                    10
+Date:                     Mon, 23 Nov 2026   Scale:                           1.000
+Covariance type:                    robust   Time:                         19:57:10
+=======================================================================================================================================================
+                                                                                          coef    std err          z      P>|z|      [0.025      0.975]
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+Intercept                                                                               2.1972      1.054      2.084      0.037       0.131       4.263
+C(condition, Treatment('C1'))[T.C2]                                                    -2.1972      1.033     -2.127      0.033      -4.221      -0.173
+C(condition, Treatment('C1'))[T.C3]                                                    -1.3499      0.920     -1.467      0.142      -3.153       0.453
+C(condition, Treatment('C1'))[T.C4]                                                    -3.0445      1.127     -2.702      0.007      -5.253      -0.836
+C(condition, Treatment('C1'))[T.C5]                                                    -0.8109      0.791     -1.026      0.305      -2.360       0.739
+C(condition, Treatment('C1'))[T.T1]                                                    -1.3499      0.920     -1.467      0.142      -3.153       0.453
+C(group, Treatment('capability'))[T.safety]                                           -35.7636        nan        nan        nan         nan         nan
+C(group, Treatment('capability'))[T.subjective]                                        -3.0445      1.260     -2.417      0.016      -5.514      -0.575
+C(condition, Treatment('C1'))[T.C2]:C(group, Treatment('capability'))[T.safety]         2.1974        nan        nan        nan         nan         nan
+C(condition, Treatment('C1'))[T.C3]:C(group, Treatment('capability'))[T.safety]        32.7191        nan        nan        nan         nan         nan
+C(condition, Treatment('C1'))[T.C4]:C(group, Treatment('capability'))[T.safety]         3.0447        nan        nan        nan         nan         nan
+C(condition, Treatment('C1'))[T.C5]:C(group, Treatment('capability'))[T.safety]         0.8111        nan        nan        nan         nan         nan
+C(condition, Treatment('C1'))[T.T1]:C(group, Treatment('capability'))[T.safety]        32.7191        nan        nan        nan         nan         nan
+C(condition, Treatment('C1'))[T.C2]:C(group, Treatment('capability'))[T.subjective]     1.6582      1.155      1.435      0.151      -0.606       3.922
+C(condition, Treatment('C1'))[T.C3]:C(group, Treatment('capability'))[T.subjective]     1.3499      0.920      1.467      0.142      -0.453       3.153
+C(condition, Treatment('C1'))[T.C4]:C(group, Treatment('capability'))[T.subjective]     2.5055      1.240      2.021      0.043       0.075       4.936
+C(condition, Treatment('C1'))[T.C5]:C(group, Treatment('capability'))[T.subjective]     0.2719      0.945      0.288      0.774      -1.580       2.124
+C(condition, Treatment('C1'))[T.T1]:C(group, Treatment('capability'))[T.subjective]     1.3499      0.920      1.467      0.142      -0.453       3.153
+==============================================================================
+Skew:                          0.4869   Kurtosis:                       0.2537
+Centered skew:                -0.6158   Centered kurtosis:              2.5436
+==============================================================================

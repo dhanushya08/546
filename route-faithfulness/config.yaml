@@ -144,6 +144,18 @@ models:
     base_url: http://localhost:8000/v1
     api_key_env: VLLM_API_KEY
 
+  # Plan's open-weights scaling pair, served with vLLM on DeltaAI (docs/DELTAAI_SETUP.md).
+  # Not served on Vertex AI any more. Llama 3.1 has no thinking mode; tool calls use vLLM's llama3_json parser.
+  llama31_8b_vllm:
+    model: meta-llama/Llama-3.1-8B-Instruct
+    base_url: http://localhost:8000/v1
+    api_key_env: VLLM_API_KEY
+
+  llama31_70b_vllm:
+    model: meta-llama/Llama-3.1-70B-Instruct
+    base_url: http://localhost:8000/v1
+    api_key_env: VLLM_API_KEY
+
 judge:
   # gpt-oss-120b on Vertex AI (same judge model as the earlier Groq setup; neither tested model).
   # Auth: gcloud ADC, like gemini35_flash.

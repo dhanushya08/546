@@ -258,6 +258,8 @@ scripts/run_model.sh     run + judge + analyze one model
 
 ## 10. Running the open models on DeltaAI (optional)
 
+**Start with [docs/DELTAAI_SETUP.md](docs/DELTAAI_SETUP.md)**: it covers getting an account through ACCESS, logging in, the one-time setup script (`scripts/deltaai_setup.sh`), and running Llama-3.1 8B / 70B (`sbatch … scripts/delta_serve_and_run.sbatch llama8b|llama70b`). The steps below are the original notes for Qwen and Gemma.
+
 Use this if OpenRouter rejects tool calls or will not turn thinking off. GPT-4o and the judge still run through the OpenAI API from your laptop.
 
 DeltaAI nodes have 4 H100 GPUs (96 GB each) with **ARM CPUs**, so x86-only software will not run there. One GPU is plenty for a 9B or 12B model.

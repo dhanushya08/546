@@ -8,6 +8,7 @@ Last updated 2026-11-23.
 | [TEAM_GUIDE.md](TEAM_GUIDE.md) (this page) | Status, open tasks, decisions, where things live |
 | [STUDY_DESIGN.md](STUDY_DESIGN.md) | The plan: ladder, taxonomy, metrics, controls, and how each maps to the code |
 | [MODELS_AND_PROVIDERS.md](MODELS_AND_PROVIDERS.md) | Which models run where, provider quirks, measured costs, caveats for the paper |
+| [DELTAAI_SETUP.md](DELTAAI_SETUP.md) | DeltaAI: getting an account through ACCESS, logging in, running Llama 3.1 8B / 70B with vLLM |
 | [research/vertex_claude_setup.md](research/vertex_claude_setup.md) | Research report on Claude API + Vertex AI (sources for the provider choices); raw notes in [research/notes/](research/notes/) |
 | [../runs/2026-11-23/README.md](../runs/2026-11-23/README.md) | The full run's outputs: what is in the snapshot, how to restore and analyze it, costs |
 | [../README.md](../README.md) | How to install and run every step |
@@ -41,7 +42,7 @@ Pick a task, put your name in the Owner column in a PR, and link your PR in Note
 | 5 | Add T3: the three tool descriptions | Plan rung T3 (source trust). Today every tool run uses the "verbatim and unmodified" description, i.e. T3-trusted. | | Add `neutral` and `unverified` descriptions as new conditions; see STUDY_DESIGN.md |
 | 6 | Add the quote probe | Separates override (read the claim, changed it) from reading failure | | A separate pass: ask for the conclusion sentence, then the answer |
 | 7 | Add GPT-4o | Continuity with the pilot (70% to 29%) | | Needs `OPENAI_API_KEY`; config key `gpt4o` exists |
-| 8 | Add an open-weights model | Plan's Llama-3.1 8B / 70B scaling pair | | Llama 3.1 via vLLM on Delta (README section 10), or Llama 4 Scout / Maverick on Vertex |
+| 8 | Run Llama-3.1 8B and 70B on DeltaAI | Plan's open-weights scaling pair | | Config keys and scripts are ready; follow [DELTAAI_SETUP.md](DELTAAI_SETUP.md). First: accounts via ACCESS on Dilek's project, then step 3 and report what it prints |
 | 9 | Check Gemini's nondeterminism | Two identical T1 requests gave different answers at temperature 0 | | Rerun ~100 documents per condition; report agreement |
 | 10 | Reconcile metric definitions with the plan | Alignment specificity and bootstrap count differ between plan and code | | STUDY_DESIGN.md "Plan vs code" |
 | 11 | Claude on Vertex AI (optional) | Only if Claude must be billed through Google | | Enable Sonnet 4.6 in Model Garden, request `global_online_prediction_requests_per_base_model` quota |

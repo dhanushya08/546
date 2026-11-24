@@ -8,7 +8,8 @@ Last updated 2026-11-23.
 | [TEAM_GUIDE.md](TEAM_GUIDE.md) (this page) | Status, open tasks, decisions, where things live |
 | [STUDY_DESIGN.md](STUDY_DESIGN.md) | The plan: ladder, taxonomy, metrics, controls, and how each maps to the code |
 | [MODELS_AND_PROVIDERS.md](MODELS_AND_PROVIDERS.md) | Which models run where, provider quirks, measured costs, caveats for the paper |
-| [research/vertex_claude_setup.md](research/vertex_claude_setup.md) | Research report on Claude API + Vertex AI (sources for the provider choices) |
+| [research/vertex_claude_setup.md](research/vertex_claude_setup.md) | Research report on Claude API + Vertex AI (sources for the provider choices); raw notes in [research/notes/](research/notes/) |
+| [../runs/2026-11-23/README.md](../runs/2026-11-23/README.md) | The full run's outputs: what is in the snapshot, how to restore and analyze it, costs |
 | [../README.md](../README.md) | How to install and run every step |
 
 ## Status
@@ -25,7 +26,7 @@ Both models finished the 30-pair smoke test, and the full 940-pair run is under 
 | Llama 3.1 8B / 70B | Blocked on Vertex | No longer served there; see [MODELS_AND_PROVIDERS.md](MODELS_AND_PROVIDERS.md) |
 | Judge validation (kappa) | Not started | Needed before trusting any number |
 
-Run outputs (`outputs/`, `results/`) are not in git (`.gitignore`). Until a shared bucket exists, ask whoever ran a model for a zip of `outputs/raw/<model>/` and `outputs/judged/<model>/`; `python -m src.analyze` rebuilds `results/` from them.
+The run's outputs are committed in [`runs/2026-11-23/`](../runs/2026-11-23/README.md): gzipped transcripts, judge labels and the smoke-test results, with restore commands. `outputs/` and `results/` stay git-ignored as working folders; to share a new run, add a dated folder under `runs/` the same way.
 
 ## Open tasks
 
@@ -61,7 +62,9 @@ Pick a task, put your name in the Owner column in a PR, and link your PR in Note
 | Every setting: models, prompts, conditions, judge | `config.yaml` |
 | Setup + smoke test + full run, locally or on Vertex AI | `notebooks/vertex_setup_and_run.ipynb` |
 | API keys | `.env`, git-ignored; template in `.env.example`. Never commit keys or paste them into the notebook |
-| Raw answers / judged answers | `outputs/raw/<model>/<condition>.jsonl`, `outputs/judged/<model>/<condition>.jsonl` (not in git) |
+| Raw answers / judged answers (working copies) | `outputs/raw/<model>/<condition>.jsonl`, `outputs/judged/<model>/<condition>.jsonl` (not in git) |
+| Shared run snapshots | `runs/<date>/` (in git; raw transcripts gzipped) |
+| Launch several models in parallel | `scripts/run_parallel.sh <model> <model> ...` |
 | Tables and figures | `results/summary.md`, `results/figures/` (rebuilt by `python -m src.analyze`) |
 
 ## How to pick up a task

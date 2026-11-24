@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from .conditions import CONDITION_NAMES
+from .conditions import CONDITION_NAMES, order_conditions
 from .config import load_config, read_jsonl, resolve
 from .events import EVENT_NAMES
 from .judge import CODES, CODE_NAMES, relays_support
@@ -23,7 +23,9 @@ FAITHFUL = {"B1", "B2"}
 PRESERVED = {"B1", "B2", "B3", "B4", "B5"}
 SILENT = {"B8", "O", "E"}
 GROUP_ORDER = ["safety", "capability", "subjective"]
-PLANNED = [("C1", "C2"), ("C2", "C3"), ("C2", "C4"), ("C4", "C5"), ("C3", "C6")]
+# Ladder steps: C1->C2 wording, C2->T1 channel, T1->C3 agency (C2->C3 = channel + agency, as before).
+PLANNED = [("C1", "C2"), ("C2", "T1"), ("T1", "C3"), ("C2", "C3"), ("C2", "C4"), ("C4", "C5"), ("C3", "C6")]
+TRANSITIONS = [("C1", "C3"), ("C2", "C3"), ("C2", "T1"), ("T1", "C3")]
 B = 2000  # bootstrap resamples
 
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -91,7 +93,8 @@ def metrics_table(d: pd.DataFrame) -> pd.DataFrame:
         if cond == "C5":
             row["recall_at_k"] = rate(g.gold_rank.notna().astype(int))
         out.append(row)
-    t = pd.DataFrame(out).set_index("condition").sort_index()
+    t = pd.DataFrame(out).set_index("condition")
+    t = t.reindex(order_conditions(t.index))
     if "C1" in t.index:
         t["dFaithGap_vs_C1"] = t["FaithGap"] - t.loc["C1", "FaithGap"]
         t["RouteGap_vs_C1"] = t.loc["C1", "F_opp"] - t["F_opp"]
@@ -196,11 +199,12 @@ def gee_model(d: pd.DataFrame) -> str:
 def label_distribution(d: pd.DataFrame) -> pd.DataFrame:
     v = d[d.valid & (d.polarity == "opposing")]
     t = pd.crosstab(v.condition, v.code, normalize="index").reindex(columns=CODES, fill_value=0)
-    return t
+    return t.reindex(order_conditions(t.index))
 
 
 def event_distribution(d: pd.DataFrame) -> pd.DataFrame:
-    return pd.crosstab(d.condition, d.event, normalize="index")
+    t = pd.crosstab(d.condition, d.event, normalize="index")
+    return t.reindex(order_conditions(t.index))
 
 
 def transitions(d: pd.DataFrame, a="C1", b="C3") -> pd.DataFrame:
@@ -220,7 +224,7 @@ def figures(d: pd.DataFrame, model: str, outdir: Path):
     import matplotlib.pyplot as plt
 
     outdir.mkdir(parents=True, exist_ok=True)
-    conds = sorted(d.condition.unique())
+    conds = order_conditions(d.condition.unique())
 
     # 1) Faithful rate on opposing documents, by condition and group
     v = d[d.valid & (d.polarity == "opposing")]
@@ -335,7 +339,7 @@ def analyze_model(d: pd.DataFrame, model: str, outroot: Path) -> str:
 
     # ΔFaithGap CIs and alignment specificity
     rows = []
-    for c in sorted(d.condition.unique()):
+    for c in order_conditions(d.condition.unique()):
         if c == "C1":
             continue
         est, lo, hi, n = bootstrap_dfg(d, c)
@@ -368,7 +372,7 @@ def analyze_model(d: pd.DataFrame, model: str, outroot: Path) -> str:
     ev.columns = [f"{c} {EVENT_NAMES.get(c, '')}" for c in ev.columns]
     md += ["### Route events (percent of documents)", "", md_table(ev, pct_cols=list(ev.columns)), ""]
 
-    for a, b in (("C1", "C3"), ("C2", "C3")):
+    for a, b in TRANSITIONS:
         tr = transitions(d, a, b)
         if not tr.empty:
             tr.to_csv(out / f"transitions_{a}_to_{b}.csv")

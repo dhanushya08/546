@@ -115,7 +115,7 @@ def context_docs(r: dict, by_id: dict) -> tuple[str, list[tuple[str, str]]]:
         if c.get("name") == "read_document" and isinstance(d, str) and d in by_id and d != gold and d not in seen:
             seen.add(d)
             others.append((f"Document {d}", by_id[d]["document"]))
-    label = f" (Document {gold})" if gold and r.get("condition") in ("C2", "C3", "C6") else ""
+    label = f" (Document {gold})" if gold and r.get("condition") in ("C2", "T1", "C3", "C6") else ""
     return label, others
 
 
@@ -131,8 +131,14 @@ def build_messages(claim, document, question, answer, others=None, target_label=
 def parse_code(text: str) -> tuple[str | None, str]:
     try:
         obj = json.loads(text)
-        code = str(obj.get("code", "")).strip().upper()
-        return (code if code in CODES else None), str(obj.get("rationale", ""))
+        code = str(obj.get("code", "")).strip().upper() if isinstance(obj, dict) else ""
+        if code in CODES:
+            return code, str(obj.get("rationale", ""))
+        # Valid JSON but no top-level code, e.g. gpt-oss's {"final": {"code": ..., "rationale": ...}}
+        m = re.search(r'"code"\s*:\s*"([A-Za-z0-9]+)"', text)
+        code = m.group(1).upper() if m else None
+        why = re.search(r'"rationale"\s*:\s*"((?:[^"\\]|\\.)*)"', text)
+        return (code if code in CODES else None), (why.group(1) if why else text[:200])
     except json.JSONDecodeError:
         m = re.search(r'"code"\s*:\s*"([A-Za-z0-9]+)"', text) or re.search(r"\b(B[1-8]|O|E)\b", text)
         code = m.group(1).upper() if m else None

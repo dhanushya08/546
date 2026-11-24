@@ -14,7 +14,8 @@ The question and the instruction are word-for-word the same in every condition. 
 |---|---|---|---|---|
 | C1 | Direct | Document, then question, in one user message (paper layout) | — | Baseline |
 | C2 | Direct-reshaped | Question with document ID first, document inline (same text as C3) | C1 | Prompt wording |
-| C3 | Tool | Question + ID; model must call `read_document`, which returns the document verbatim | C2 | The tool channel |
+| T1 | Tool-injected | C3's user turn, then a `read_document` call written by the harness and its verbatim result | C2 | The tool channel only |
+| C3 | Tool | Question + ID; model must call `read_document`, which returns the document verbatim | T1 (and C2) | Agency: the model makes the call |
 | C4 | RAG-oracle | Gold document shown as a retrieved result | C2 | Retrieval-style presentation, no retrieval error |
 | C5 | RAG-BM25 | Real top-3 BM25 retrieval over the corpus, twin document excluded | C4 | Retrieval errors and distractors |
 | C6 | Agent (stretch) | `search_corpus` + `read_document`, up to 5 turns | C3 | Model-driven search and source choice |
@@ -68,7 +69,7 @@ y = 1 if the answer is B1 or B2. "opp" = opposing documents, "conf" = confirming
 | Tool-call rate, Recall@3 | from route events | Route diagnostics |
 
 **Statistics** (all computed by `src.analyze`):
-- McNemar's test on opposing documents for each planned comparison (C1–C2, C2–C3, C2–C4, C4–C5, C3–C6), exact when discordant pairs < 25, Holm-corrected.
+- McNemar's test on opposing documents for each planned comparison (C1–C2, C2–T1, T1–C3, C2–C3, C2–C4, C4–C5, C3–C6), exact when discordant pairs < 25, Holm-corrected. C2–T1 is the channel step and T1–C3 the agency step of the plan's ladder.
 - 95% pair-level bootstrap CIs (2,000 resamples) for ΔFaithGap and alignment specificity.
 - GEE logistic regression on opposing documents, `faithful ~ condition × group`, clustered by pair (secondary; a coefficient near ±20 or more means a cell is 0% or 100% and that term should be ignored).
 - Judge check: Cohen's kappa against human labels.
@@ -87,6 +88,21 @@ python -m venv .venv && source .venv/bin/activate        # Windows: .venv\Script
 pip install -r requirements.txt
 cp .env.example .env                                      # then paste your keys into .env
 ```
+
+### Claude API + Vertex AI (notebook)
+
+`notebooks/vertex_setup_and_run.ipynb` does every step below for Claude Sonnet 4.6 (Claude API, `claude_sonnet46`) and Gemini 3.5 Flash (Vertex AI, `gemini35_flash`), with gpt-oss-120b on Vertex AI as the judge. It runs locally or in Colab Enterprise (Vertex AI → Colab Enterprise → Import → URL of the notebook on GitHub). You need:
+
+- `ANTHROPIC_API_KEY` in `.env` (or in Secret Manager as `anthropic-api-key`).
+- Vertex AI: `gcloud auth application-default login` once, and `GOOGLE_CLOUD_PROJECT` in `.env`. Vertex's OpenAI-compatible endpoint takes no API keys; the code refreshes the gcloud token itself during long runs.
+- The Vertex AI API enabled in the project. Gemini and gpt-oss need nothing else.
+
+Provider notes (all handled in `src/llm.py` and `src/llm_anthropic.py`, set per model with `provider:` in `config.yaml`):
+
+- **Claude, temperature 0.** anthropic SDK 2.x sends API version `2026-10-21`, which rejects `temperature`. `claude_sonnet46` pins `anthropic-version: 2023-06-01` so temperature 0 still applies, like every other model.
+- **Gemini 3, thinking off.** `thinking_budget: 0` in `extra_body` (checked: no reasoning tokens). Gemini 3 also rejects a tool call in the history unless its `thought_signature` is sent back, so model-made calls are echoed unchanged, and the call the harness writes in T1 carries Google's placeholder signature (`injected_tool_call_extra`).
+- **Claude on Vertex** (`claude_sonnet46_vertex`) is configured but needs Sonnet 4.6 enabled in Model Garden and a quota increase: new projects get 0 requests per minute.
+- **Llama 3.1 / 3.3 are no longer served as managed (MaaS) models on Vertex** (only Llama 4 Scout / Maverick, in us-east5). For the plan's Llama-3.1 8B / 70B, self-host with vLLM (section 10) or use another provider.
 
 ### Step 1: test the pipeline offline (2 min, no keys, no cost)
 
@@ -224,7 +240,9 @@ src/data.py              load + normalize FaithConflict (auto-detects columns)
 src/prompts.py           message layouts for C1-C6, tool schemas
 src/conditions.py        the logic of each condition, including the tool loop
 src/retrieval.py         BM25 search (twin excluded)
-src/llm.py               async client for any OpenAI-compatible API, retries
+src/llm.py               async client: OpenAI-compatible APIs, Vertex AI (gcloud ADC), retries
+src/llm_anthropic.py     Claude API / Claude on Vertex through the Anthropic SDK (same interface)
+notebooks/vertex_setup_and_run.ipynb   setup, smoke test and full run for Claude API + Vertex AI
 src/run.py               runs conditions for one model (resumable)
 src/judge.py             LLM judge, B1-B8 + O/E, blind to route
 src/events.py            route-event labels R0-R5
@@ -294,3 +312,5 @@ DeltaAI nodes have 4 H100 GPUs (96 GB each) with **ARM CPUs**, so x86-only softw
 - C4/C5 present whole documents (about 264 words), so chunking effects are not tested.
 - C6 changes the user message (the model must find the document), so it is compared with C3 only descriptively.
 - Results hold for the models tested; API models can change behind the same name, so the exact snapshot is logged in every output row.
+- Gemini 3 models treat temperature as "not recommended" (later Flash versions ignore it), so temperature 0 may not make Gemini deterministic.
+- In T1 on Gemini 3, the harness-written tool call carries a placeholder thought signature, which Google describes as a last resort; C3's calls carry the model's own.
